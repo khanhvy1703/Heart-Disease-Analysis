@@ -1,0 +1,99 @@
+---
+title: "Final Project DS5110"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+```
+
+## Import Data 
+```{r}
+setwd("D:\\Northeastern\\Spring 2024\\DS5110\\Project\\")
+
+# UCI data
+cleveland <- read.csv("uci\\processed.cleveland.data")
+hungarian <- read.csv("uci\\processed.hungarian.data")
+va <- read.csv("uci\\processed.va.data")
+switzerland <- read.csv("uci\\processed.switzerland.data")
+```
+
+## Clean Data
+```{r}
+# tidy data
+dataLists <- list(cleveland, hungarian, va, switzerland)
+columnNames <- c("age", "sex", "cp", "trestbps", "chol", "fbs", "restecg", 
+                 "thalach", "exang", "oldpeak", "slope", "ca", "thal",
+                 "have_heart_disease")
+
+# Rename function
+renameColumns <- function(df) {
+  names(df) <- columnNames
+  return(df)
+}
+
+cleveland <- renameColumns(cleveland)
+hungarian <- renameColumns(hungarian)
+va <- renameColumns(va)
+switzerland <- renameColumns(switzerland)
+
+# merge all  dataframe into 1
+uci <- rbind(cleveland, hungarian, va, switzerland)
+
+uci <- data.frame(uci)
+
+# get unique values
+uniqueValues <- sapply(uci, unique)
+
+uniqueValues
+
+str(uci)
+
+uci <- uci %>%
+  mutate(sex = case_when(sex == 0 ~ "female",
+                         sex == 1 ~ "males")) %>%
+  mutate(cp = case_when(cp == 1 ~ "typical angina",
+                        cp == 2 ~ "atypical angina",
+                        cp == 3 ~"non-anginal pain",
+                        cp == 4 ~"asymptomatic")) %>%
+  mutate(fbs = case_when(fbs == "0" ~ "true",
+                         fbs == "1" ~ "false",
+                         TRUE ~ "false")) %>%
+  mutate(restecg = case_when(restecg == 0 ~ "normal",
+                             restecg == 1 ~ "ST-T wave abnormality",
+                             restecg == 2 ~ "left ventricular hypertrophy",
+                             TRUE ~ "normal")) %>%
+  mutate(exang = case_when(exang == 0 ~ "no",
+                           exang == 1 ~ "yes",
+                           TRUE ~ "no")) %>%
+  mutate(thal = case_when(thal %in% c("3.0", "3") ~ "normal",
+                          thal %in% c("6.0", "6") ~ "fixed defect",
+                          thal %in% c("7.0", "7") ~ "reversable defect",
+                          TRUE ~ "unknow")) %>%
+  mutate(have_heart_disease = case_when(have_heart_disease == 0 ~ "no",
+                                        have_heart_disease %in% c(1, 2, 3, 4) ~ 
+                                          "yes"))
+str(uci)
+```
+
+## Visualization 
+```{r}
+ggplot(uci, aes(x = age, fill = as.factor(have_heart_disease))) +
+  geom_density(alpha = 0.3) +
+  labs(x = "Age", y = "Density", fill = "Heart Disease") +
+  ggtitle("Heart Disease Across Age")
+
+ggplot(uci, aes(x = sex, fill = as.factor(have_heart_disease))) +
+  geom_bar(position = "fill") +
+  labs(x = "Sex", y = "Count", fill = "Heart Disease") +
+  ggtitle("Relationship Between Sex and Heart Disease")
+
+ggplot(uci, aes(x = cp, fill = as.factor(have_heart_disease))) +
+  geom_bar(position = "dodge") +
+  labs(x = "Chest Pain Type", y = "Count", fill = "Heart Disease") +
+  ggtitle("Relationship Between Chest Pain Type and Heart Disease")
+```
