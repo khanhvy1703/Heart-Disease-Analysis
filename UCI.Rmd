@@ -41,17 +41,16 @@ hungarian <- renameColumns(hungarian)
 va <- renameColumns(va)
 switzerland <- renameColumns(switzerland)
 
-# merge all  dataframe into 1
+# merge all  data frame into 1
 uci <- rbind(cleveland, hungarian, va, switzerland)
 
 uci <- data.frame(uci)
 
-# get unique values
-uniqueValues <- sapply(uci, unique)
-
-uniqueValues
-
-str(uci)
+# convert "?" into N/A and then remove N/A values
+for (col_name in names(uci)) {
+  uci[[col_name]][uci[[col_name]] == "?"] <- NA
+}
+uci <- na.omit(uci)
 
 uci <- uci %>%
   mutate(sex = case_when(sex == 0 ~ "female",
@@ -61,23 +60,43 @@ uci <- uci %>%
                         cp == 3 ~"non-anginal pain",
                         cp == 4 ~"asymptomatic")) %>%
   mutate(fbs = case_when(fbs == "0" ~ "true",
-                         fbs == "1" ~ "false",
-                         TRUE ~ "false")) %>%
+                         fbs == "1" ~ "false")) %>%
   mutate(restecg = case_when(restecg == 0 ~ "normal",
                              restecg == 1 ~ "ST-T wave abnormality",
-                             restecg == 2 ~ "left ventricular hypertrophy",
-                             TRUE ~ "normal")) %>%
+                             restecg == 2 ~ "left ventricular hypertrophy")) %>%
   mutate(exang = case_when(exang == 0 ~ "no",
-                           exang == 1 ~ "yes",
-                           TRUE ~ "no")) %>%
-  mutate(thal = case_when(thal %in% c("3.0", "3") ~ "normal",
-                          thal %in% c("6.0", "6") ~ "fixed defect",
-                          thal %in% c("7.0", "7") ~ "reversable defect",
-                          TRUE ~ "unknow")) %>%
+                           exang == 1 ~ "yes")) %>%
+  mutate(slope = case_when(slope == "1" ~ "upsloping",
+                           slope == "2" ~ "flat",
+                           slope == "3" ~ "downsloping")) %>%
+  mutate(thal = case_when(thal %in% c("3.0") ~ "normal",
+                          thal %in% c("6.0") ~ "fixed defect",
+                          thal %in% c("7.0", "7") ~ "reversable defect")) %>%
   mutate(have_heart_disease = case_when(have_heart_disease == 0 ~ "no",
                                         have_heart_disease %in% c(1, 2, 3, 4) ~ 
                                           "yes"))
+# mutate to numeric 
+uci$trestbps <- as.numeric(uci$trestbps)
+uci$chol <- as.numeric(uci$chol)
+uci$thalach <- as.numeric(uci$thalach)
+uci$oldpeak <- as.numeric(uci$oldpeak)
+uci$ca <- as.numeric(uci$ca)
+
 str(uci)
+```
+## Export to CSV
+```{r}
+folder_path <- "./cleaned-data/"  # Change this to your desired folder path
+
+# Create the folder if it doesn't already exist
+if (!dir.exists(folder_path)) {
+  dir.create(folder_path)
+}
+
+file_path <- file.path(folder_path, "cleaned-uci.csv")
+
+# Export the dataframe to a CSV file
+write.csv(uci, file = file_path, row.names = FALSE)
 ```
 
 ## Visualization 
