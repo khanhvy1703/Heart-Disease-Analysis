@@ -50,7 +50,6 @@ uci <- data.frame(uci)
 for (col_name in names(uci)) {
   uci[[col_name]][uci[[col_name]] == "?"] <- NA
 }
-uci <- na.omit(uci)
 
 uci <- uci %>%
   mutate(sex = case_when(sex == 0 ~ "female",
@@ -83,6 +82,24 @@ uci$oldpeak <- as.numeric(uci$oldpeak)
 uci$ca <- as.numeric(uci$ca)
 
 str(uci)
+
+unique(uci$chol)
+
+# filter the NA values
+for (col in names(uci)) {
+  if (is.numeric(uci[[col]])) {
+    mean_val <- round(mean(uci[[col]], na.rm = TRUE))
+    uci[[col]][is.na(uci[[col]])] <- mean_val
+  } else {
+    mode_val <- names(sort(table(uci[[col]]), decreasing = TRUE))[1]
+    uci[[col]][is.na(uci[[col]])] <- mode_val
+  }
+}
+
+# get unique values
+uniqueValues <- sapply(uci, unique)
+uniqueValues
+
 ```
 ## Export to CSV
 ```{r}
