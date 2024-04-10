@@ -13,7 +13,7 @@ library(tidyverse)
 
 ## Import Data 
 ```{r}
-setwd("D:\\Northeastern\\Spring 2024\\DS5110\\Project\\")
+setwd("D:\\Northeastern\\Spring 2024\\DS5110\\DS5110---Heart-Disease-Analysis\\")
 
 # UCI data
 cleveland <- read.csv("uci\\processed.cleveland.data")
