@@ -1,0 +1,74 @@
+---
+title: "CDC"
+output: pdf_document
+date: "2024-04-10"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+```
+
+## Import Data
+```{r}
+setwd("D:\\Northeastern\\Spring 2024\\DS5110\\DS5110---Heart-Disease-Analysis\\")
+
+# CDC data
+stoke_2016_2018 <- read.csv("cdc\\Heart_Disease_Mortality_Data_Among_US_Adults__35___by_State_Territory_and_County___2016-2018.csv")
+stoke_2019_2021 <- read.csv("cdc\\Stroke_Mortality_Data_Among_US_Adults__35___by_State_Territory_and_County___2019-2021_20240311.csv")
+```
+
+## Clean data
+```{r}
+str(stoke_2016_2018)
+str(stoke_2019_2021)
+
+# drop Georeference column in stoke_2019_2021
+drops <- c("Georeference")
+stoke_2019_2021 <- stoke_2019_2021[ , !(names(stoke_2019_2021) %in% drops)]
+
+cdc <- rbind(stoke_2016_2018, stoke_2019_2021)
+cdc <- data.frame(cdc)
+
+str(cdc)
+
+# drop unnecessary columns
+drops <- c("Year", "X_lon", "Y_lat", "Class", "DataSource", 
+           "Data_Value_Footnote_Symbol", "Data_Value_Footnote",
+           "StratificationCategory1", "StratificationCategory2",
+           "Data_Value_Unit")
+cdc <- cdc[ , !(names(cdc) %in% drops)]
+
+# rename
+colnames(cdc)[colnames(cdc) == "Data_Value"] <- "Data_Value_Per_100000_Population"
+
+for (col in names(cdc)) {
+  if (is.numeric(cdc[[col]])) {
+    mean_val <- round(mean(cdc[[col]], na.rm = TRUE), 2)
+    cdc[[col]][is.na(cdc[[col]])] <- mean_val
+  } else {
+    mode_val <- names(sort(table(cdc[[col]]), decreasing = TRUE))[1]
+    cdc[[col]][is.na(cdc[[col]])] <- mode_val
+  }
+}
+
+str(cdc)
+```
+
+## Export to CSV
+```{r}
+folder_path <- "./cleaned-data/"  # Change this to your desired folder path
+
+# Create the folder if it doesn't already exist
+if (!dir.exists(folder_path)) {
+  dir.create(folder_path)
+}
+
+file_path <- file.path(folder_path, "cleaned-cdc.csv")
+
+# Export the dataframe to a CSV file
+write.csv(cdc, file = file_path, row.names = FALSE)
+```
