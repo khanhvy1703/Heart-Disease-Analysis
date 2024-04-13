@@ -1,0 +1,149 @@
+---
+title: "Heart Disease Analysis"
+output: pdf_document
+subtitle: "Maalolan Bharaniraj, Ngoc Khanh Vy Le, Madhuri Krishnamurthy, Subhankar Shah
+"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+if (!requireNamespace("tidyverse", quietly = TRUE)) {
+  install.packages("tidyverse")
+}
+if (!requireNamespace("ggplot2", quietly = TRUE)) {
+  install.packages("ggplot2")
+}
+if (!requireNamespace("dplyr", quietly = TRUE)) {
+  install.packages("dplyr")
+}
+
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+options(readr.show_col_types = FALSE)
+```
+
+
+## Import Dataset 1 - UCI
+```{r}
+hungarian <- read.csv("unprocessed-data-set/UCI/hungarian.data")
+switzerland <- read.csv("unprocessed-data-set/UCI/switzerland.data")
+```
+
+## Import Dataset 2 - CDC 
+```{r}
+heart_2016_2018 <- read.csv("unprocessed-data-set/CDC/Heart_Disease_Mortality_Data_Among_US_Adults_2016-2018.csv")
+
+heart_2019_2021 <- read.csv("unprocessed-data-set/CDC/Heart_Disease_Mortality_Data_Among_US_Adults_2019-2021.csv")
+
+stoke_2019_2021 <- read.csv("unprocessed-data-set/CDC/Stroke_Mortality_Data_Among_US_Adults_2019-2021.csv")
+```
+
+## Import Dataset 3 - Kaggle
+```{r}
+heart_2022 <- read.csv("unprocessed-data-set/Kaggle/heart_2022_no_nans.csv")
+```
+
+
+## Cleaning UCI data set
+```{r}
+# tidy data
+dataLists <- list(hungarian, switzerland)
+columnNames <- c("age", "sex", "cp", "trestbps", "chol", "fbs", "restecg", 
+                 "thalach", "exang", "oldpeak", "slope", "ca", "thal",
+                 "have_heart_disease")
+
+# Rename function
+renameColumns <- function(df) {
+  names(df) <- columnNames
+  return(df)
+}
+
+hungarian <- renameColumns(hungarian)
+switzerland <- renameColumns(switzerland)
+
+# merge all  data frame into 1
+uci <- rbind(hungarian, switzerland)
+
+uci <- data.frame(uci)
+
+# convert "?" into N/A and then remove N/A values
+for (col_name in names(uci)) {
+  uci[[col_name]][uci[[col_name]] == "?"] <- NA
+}
+
+uci <- uci %>%
+  mutate(sex = case_when(sex == 0 ~ "female",
+                         sex == 1 ~ "males")) %>%
+  mutate(cp = case_when(cp == 1 ~ "typical angina",
+                        cp == 2 ~ "atypical angina",
+                        cp == 3 ~"non-anginal pain",
+                        cp == 4 ~"asymptomatic")) %>%
+  mutate(fbs = case_when(fbs == "0" ~ "true",
+                         fbs == "1" ~ "false")) %>%
+  mutate(restecg = case_when(restecg == 0 ~ "normal",
+                             restecg == 1 ~ "ST-T wave abnormality",
+                             restecg == 2 ~ "left ventricular hypertrophy")) %>%
+  mutate(exang = case_when(exang == 0 ~ "no",
+                           exang == 1 ~ "yes")) %>%
+  mutate(slope = case_when(slope == "1" ~ "upsloping",
+                           slope == "2" ~ "flat",
+                           slope == "3" ~ "downsloping")) %>%
+  mutate(thal = case_when(thal %in% c("3.0") ~ "normal",
+                          thal %in% c("6.0") ~ "fixed defect",
+                          thal %in% c("7.0", "7") ~ "reversable defect")) %>%
+  mutate(have_heart_disease = case_when(have_heart_disease == 0 ~ "no",
+                                        have_heart_disease %in% c(1, 2, 3, 4) ~ 
+                                          "yes"))
+# mutate to numeric 
+uci$trestbps <- as.numeric(uci$trestbps)
+uci$chol <- as.numeric(uci$chol)
+uci$thalach <- as.numeric(uci$thalach)
+uci$oldpeak <- as.numeric(uci$oldpeak)
+uci$ca <- as.numeric(uci$ca)
+
+# filter the NA values
+for (col in names(uci)) {
+  if (is.numeric(uci[[col]])) {
+    mean_val <- round(mean(uci[[col]], na.rm = TRUE))
+    uci[[col]][is.na(uci[[col]])] <- mean_val
+  } else {
+    mode_val <- names(sort(table(uci[[col]]), decreasing = TRUE))[1]
+    uci[[col]][is.na(uci[[col]])] <- mode_val
+  }
+}
+
+# get unique values
+uniqueValues <- sapply(uci, unique)
+```
+
+## cleaning CDC data set
+```{r}
+drops <- c("Georeference")
+heart_2019_2021 <- heart_2019_2021[ , !(names(heart_2019_2021) %in% drops)]
+
+cdc <- rbind(heart_2016_2018, heart_2019_2021)
+cdc <- data.frame(cdc)
+
+# drop unnecessary columns
+drops <- c("Year", "X_lon", "Y_lat", "Class", "DataSource", 
+           "Data_Value_Footnote_Symbol", "Data_Value_Footnote",
+           "StratificationCategory1", "StratificationCategory2",
+           "Data_Value_Unit")
+cdc <- cdc[ , !(names(cdc) %in% drops)]
+
+# rename
+colnames(cdc)[colnames(cdc) == "Data_Value"] <- "Data_Value_Per_100000_Population"
+
+for (col in names(cdc)) {
+  if (is.numeric(cdc[[col]])) {
+    mean_val <- round(mean(cdc[[col]], na.rm = TRUE), 2)
+    cdc[[col]][is.na(cdc[[col]])] <- mean_val
+  } else {
+    mode_val <- names(sort(table(cdc[[col]]), decreasing = TRUE))[1]
+    cdc[[col]][is.na(cdc[[col]])] <- mode_val
+  }
+}
+```
+
