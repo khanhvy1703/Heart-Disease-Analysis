@@ -17,10 +17,13 @@ if (!requireNamespace("ggplot2", quietly = TRUE)) {
 if (!requireNamespace("dplyr", quietly = TRUE)) {
   install.packages("dplyr")
 }
-
+if (!requireNamespace("caret", quietly = TRUE)) {
+  install.packages("caret")
+}
 library(tidyverse)
 library(ggplot2)
 library(dplyr)
+library(caret)
 options(readr.show_col_types = FALSE)
 ```
 
@@ -145,5 +148,108 @@ for (col in names(cdc)) {
     cdc[[col]][is.na(cdc[[col]])] <- mode_val
   }
 }
+```
+
+
+## cleaning Kaggle data set
+```{r}
+# drop unnecessary columns
+drops <- c("PhysicalHealthDays", "MentalHealthDays", "LastCheckupTime", 
+           "RemovedTeeth", "ChestScan", 
+           "TetanusLast10Tdap", "HighRiskLastYear",
+           "StratificationCategory1", "StratificationCategory2",
+           "Data_Value_Unit")
+heart_2022 <- heart_2022[ , !(names(heart_2022) %in% drops)]
+```
+
+## Feature Engineering
+
+### Binning Age and BMI:
+
+Creating bins for BMI, sleep category to simplify the patterns for the machine learning algorithm.
+```{r}
+# Binning BMI
+bmi_bins <- c(0, 18.5, 25, 30, Inf)
+bmi_labels <- c("Underweight", "Normal", "Overweight", "Obese")
+heart_2022$BMICategory <- cut(heart_2022$BMI, bmi_bins, 
+                               labels = bmi_labels, right = FALSE)
+
+
+# Define bins and labels for sleep duration categories
+sleep_bins <- c(0, 5, 7, 9, Inf)  
+sleep_labels <- c("Less than 5 hours", "5-7 hours", 
+                  "7-9 hours", "More than 9 hours")
+
+# Create a new categorical variable for sleep duration
+heart_2022$SleepCategory <- cut(heart_2022$SleepHours, sleep_bins, 
+                                labels = sleep_labels, right = FALSE)
+```
+
+### Scaling Numerical Variables:
+
+Scaling can help improve the performance of algorithms like SVM or KNN. You can use scale() for this purpose.
+```{r}
+heart_2022$ScaledHeight <- scale(heart_2022$HeightInMeters)
+heart_2022$ScaledWeight <- scale(heart_2022$WeightInKilograms)
+```
+
+### Feature Combination:
+
+Creating new features based on existing ones. Creating a binary variable indicating whether a person has any pre-existing conditions.
+```{r}
+heart_2022$HasConditions <- ifelse(heart_2022$HadHeartAttack == 'Yes' | 
+                                     heart_2022$HadAngina == 'Yes' | 
+                                     heart_2022$HadStroke == 'Yes' | 
+                                     heart_2022$HadAsthma == 'Yes' | 
+                                     heart_2022$HadSkinCancer == 'Yes' | 
+                                     heart_2022$HadCOPD == 'Yes' | 
+                                     heart_2022$HadCOPD == 'Yes' |
+                                     heart_2022$HadDepressiveDisorder == 'Yes' |
+                                     heart_2022$HadKidneyDisease == 'Yes' |
+                                     heart_2022$HadArthritis == 'Yes' |
+                                     heart_2022$HadDiabetes == 'Yes', 'Yes','No')
+
+heart_2022$Vaccinated <- ifelse(heart_2022$FluVaxLast12 == 'Yes' | 
+                                  heart_2022$PneumoVaxEver == 'Yes', 'Yes','No')
+
+
+drops <- c("FluVaxLast12", "PneumoVaxEver")
+heart_2022 <- heart_2022[ , !(names(heart_2022) %in% drops)]
+```
+
+## Feature Engineering for UCI data
+```{r}
+# Age Binning
+uci <- uci %>%
+  mutate(age_group = case_when(
+    age < 40 ~ "Young",
+    age >= 40 & age < 60 ~ "Middle-aged",
+    age >= 60 ~ "Elderly"
+  ))
+
+# Blood Pressure Scaling (Min-Max scaling)
+uci$bps_scaled <- scale(uci$trestbps, center = FALSE, 
+                               scale = max(uci$trestbps))
+
+# Cholesterol Binning
+uci <- uci %>%
+  mutate(cholesterol_group = case_when(
+    chol < 200 ~ "Normal",
+    chol >= 200 & chol < 240 ~ "Borderline High",
+    chol >= 240 ~ "High"
+  ))
+
+# Encoding Categorical Variables
+uci <- uci %>%
+  mutate(
+    sex = as.factor(sex),
+    fbs = as.factor(fbs),
+    restecg = as.factor(restecg),
+    thalach = as.factor(thalach)
+  )
+
+# One-hot encoding
+one_hot_uci <- dummyVars(~ sex + fbs + restecg + thalach, data = uci) %>%
+  predict(uci)
 ```
 
