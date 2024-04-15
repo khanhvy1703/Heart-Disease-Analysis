@@ -20,18 +20,22 @@ if (!requireNamespace("dplyr", quietly = TRUE)) {
 if (!requireNamespace("caret", quietly = TRUE)) {
   install.packages("caret")
 }
+if (!requireNamespace("pROC", quietly = TRUE)) {
+  install.packages("pROC")
+}
 library(tidyverse)
 library(ggplot2)
 library(dplyr)
 library(caret)
+library(pROC)
 options(readr.show_col_types = FALSE)
 ```
 
 
 ## Import Dataset 1 - UCI
 ```{r}
-hungarian <- read.csv("unprocessed-data-set/UCI/hungarian.data")
-switzerland <- read.csv("unprocessed-data-set/UCI/switzerland.data")
+hungarian <- read.csv("unprocessed-data-set/UCI/processed.cleveland.data")
+switzerland <- read.csv("unprocessed-data-set/UCI/processed.va.data")
 ```
 
 ## Import Dataset 2 - CDC 
@@ -71,7 +75,7 @@ uci <- rbind(hungarian, switzerland)
 
 uci <- data.frame(uci)
 
-# convert "?" into N/A and then remove N/A values
+# convert "?" into N/A
 for (col_name in names(uci)) {
   uci[[col_name]][uci[[col_name]] == "?"] <- NA
 }
@@ -253,3 +257,119 @@ one_hot_uci <- dummyVars(~ sex + fbs + restecg + thalach, data = uci) %>%
   predict(uci)
 ```
 
+## Insight
+Identify the region
+```{r}
+regions <- c(
+  CT = 'Northeast', ME = 'Northeast', MA = 'Northeast', NH = 'Northeast',
+  RI = 'Northeast', VT = 'Northeast', NJ = 'Northeast', NY = 'Northeast',
+  PA = 'Northeast', IL = 'Midwest', IN = 'Midwest', MI = 'Midwest',
+  OH = 'Midwest', WI = 'Midwest', IA = 'Midwest', KS = 'Midwest',
+  MN = 'Midwest', MO = 'Midwest', NE = 'Midwest', ND = 'Midwest',
+  SD = 'Midwest', DE = 'South', FL = 'South', GA = 'South',
+  MD = 'South', NC = 'South', SC = 'South', VA = 'South',
+  DC = 'South', WV = 'South', AL = 'South', KY = 'South',
+  MS = 'South', TN = 'South', AR = 'South', LA = 'South',
+  OK = 'South', TX = 'South', AZ = 'West', CO = 'West',
+  ID = 'West', MT = 'West', NV = 'West', NM = 'West',
+  UT = 'West', WY = 'West', AK = 'West', CA = 'West',
+  HI = 'West', OR = 'West', WA = 'West'
+)
+
+cdc <- cdc %>%
+  mutate(Region = regions[LocationAbbr])
+
+cdc <- na.omit(cdc)
+
+heart_disease_by_regions <- cdc %>%
+  group_by(Region) %>%
+  summarise(Total_Heart_Disease = sum(Data_Value_Per_100000_Population))
+
+ggplot(heart_disease_by_regions, aes(x = Region, 
+                                     y = Total_Heart_Disease, 
+                                     fill = Region)) +
+  geom_bar(stat = "identity", color = "black") +
+  theme_minimal() +
+  labs(title = "Total Heart Disease Cases by Region",
+       x = "Region",
+       y = "Total Cases per 100,000 Population")
+
+head(cdc)
+```
+The South region shows a significantly higher number of cases compared to the Midwest, Northeast, and West. The South is known for a culinary tradition that often includes fried foods, higher consumption of red meat, and sweetened beverages, which can contribute to higher rates of obesity, hypertension, and diabetes - all risk factors for heart disease. 
+
+```{r}
+# Encode categorical variables
+uci$sex <- as.numeric(factor(uci$sex))
+uci$cp <- as.numeric(factor(uci$cp))
+uci$fbs <- as.numeric(factor(uci$fbs))
+uci$restecg <- as.numeric(factor(uci$restecg))
+uci$exang <- as.numeric(factor(uci$exang))
+uci$slope <- as.numeric(factor(uci$slope))
+uci$thal <- as.numeric(factor(uci$thal))
+uci$have_heart_disease <- as.factor(uci$have_heart_disease)
+
+# Combining rare levels
+level_counts <- table(uci$thalach)
+rare_levels <- names(level_counts[level_counts < 5])
+
+# Replace rare levels with a common category
+uci$thalach <- as.character(uci$thalach)
+uci$thalach[uci$thalach %in% rare_levels] <- "Other"
+uci$thalach <- factor(uci$thalach)
+
+
+# Split data into training and test sets
+set.seed(123) # for reproducibility
+indexes <- createDataPartition(uci$have_heart_disease, p=0.8, list=FALSE)
+train <- uci[indexes,]
+test <- uci[-indexes,]
+
+train$thalach <- factor(train$thalach, levels = levels(uci$thalach))
+test$thalach <- factor(test$thalach, levels = levels(uci$thalach))
+
+# Fit the logistic regression model
+model <- glm(have_heart_disease ~ ., data = train, family = binomial())
+
+# Summarize the model
+summary(model)
+
+predictions <- predict(model, test, type="response")
+predicted_classes <- ifelse(predictions > 0.5, "yes", "no")
+predicted_classes <- factor(predicted_classes, levels = c("no", "yes"))
+
+# Confusion matrix to see the accuracy, sensitivity, and specificity
+confusionMatrix(predicted_classes, test$have_heart_disease)
+
+# ROC curve
+roc_response <- roc(response = test$have_heart_disease, predictor = as.numeric(predictions))
+plot(roc_response)
+auc(roc_response)
+```
+```{r}
+str(cdc)
+# get unique values
+uniqueValues <- sapply(cdc, unique)
+uniqueValues
+
+# Convert Region to a factor if it's not already
+cdc$Region <- as.factor(cdc$Region)
+
+# Run linear regression model
+model <- lm(Data_Value_Per_100000_Population ~ Region, data = cdc)
+
+# Summary of the model
+summary(model)
+
+# Plotting the relationship
+ggplot(cdc, aes(x = Region, y = Data_Value_Per_100000_Population)) +
+  geom_boxplot() +
+  geom_jitter(alpha = 0.3, color = "tomato") +
+  labs(y = "Heart Disease Mortality Rate per 100,000 Population",
+       x = "Region",
+       title = "Heart Disease Mortality Rate by Region")
+
+# Diagnostic plots
+par(mfrow = c(2,2))
+plot(model)
+```
