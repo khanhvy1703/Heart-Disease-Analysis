@@ -23,12 +23,19 @@ if (!requireNamespace("caret", quietly = TRUE)) {
 if (!requireNamespace("pROC", quietly = TRUE)) {
   install.packages("pROC")
 }
+if (!requireNamespace("tree", quietly = TRUE)) {
+  install.packages("tree")
+}
+if (!requireNamespace("broom", quietly = TRUE)) {
+  install.packages("broom")
+}
 library(tidyverse)
 library(ggplot2)
 library(dplyr)
 library(caret)
 library(pROC)
 library(tree)
+library(broom)
 options(readr.show_col_types = FALSE)
 ```
 
@@ -155,7 +162,6 @@ for (col in names(cdc)) {
 }
 ```
 
-
 ## cleaning Kaggle data set
 ```{r}
 # drop unnecessary columns
@@ -167,13 +173,7 @@ drops <- c("PhysicalHealthDays", "MentalHealthDays", "LastCheckupTime",
 heart_2022 <- heart_2022[ , !(names(heart_2022) %in% drops)]
 ```
 
-
 ## Exploratory Data Analysis
-
-```{r}
-heart_2022
-```
-
 ## Gender vs factors to find relationships
 
 *gender vs sleep and how it affect heart disease*
@@ -242,6 +242,46 @@ ggplot(unhealthy_BMI, aes(x = factor(HadHeartAttack), fill = HadHeartAttack)) +
   geom_text(stat='count', aes(label=..count..), vjust=-0.5)
 ```
 *as we can compare based on CDC's information, this shows us that people in unhealthy BMI range (BMI > 30) have a much higher chance of getting a heart attack. It is safe to say that this is one of the factors that lead to heart attack.*
+
+Identify the region
+```{r}
+regions <- c(
+  CT = 'Northeast', ME = 'Northeast', MA = 'Northeast', NH = 'Northeast',
+  RI = 'Northeast', VT = 'Northeast', NJ = 'Northeast', NY = 'Northeast',
+  PA = 'Northeast', IL = 'Midwest', IN = 'Midwest', MI = 'Midwest',
+  OH = 'Midwest', WI = 'Midwest', IA = 'Midwest', KS = 'Midwest',
+  MN = 'Midwest', MO = 'Midwest', NE = 'Midwest', ND = 'Midwest',
+  SD = 'Midwest', DE = 'South', FL = 'South', GA = 'South',
+  MD = 'South', NC = 'South', SC = 'South', VA = 'South',
+  DC = 'South', WV = 'South', AL = 'South', KY = 'South',
+  MS = 'South', TN = 'South', AR = 'South', LA = 'South',
+  OK = 'South', TX = 'South', AZ = 'West', CO = 'West',
+  ID = 'West', MT = 'West', NV = 'West', NM = 'West',
+  UT = 'West', WY = 'West', AK = 'West', CA = 'West',
+  HI = 'West', OR = 'West', WA = 'West'
+)
+
+cdc <- cdc %>%
+  mutate(Region = regions[LocationAbbr])
+
+cdc <- na.omit(cdc)
+
+heart_disease_by_regions <- cdc %>%
+  group_by(Region) %>%
+  summarise(Total_Heart_Disease = sum(Data_Value_Per_100000_Population))
+
+ggplot(heart_disease_by_regions, aes(x = Region, 
+                                     y = Total_Heart_Disease, 
+                                     fill = Region)) +
+  geom_bar(stat = "identity", color = "black") +
+  theme_minimal() +
+  labs(title = "Total Heart Disease Cases by Region",
+       x = "Region",
+       y = "Total Cases per 100,000 Population")
+
+head(cdc)
+```
+The South region shows a significantly higher number of cases compared to the Midwest, Northeast, and West. The South is known for a culinary tradition that often includes fried foods, higher consumption of red meat, and sweetened beverages, which can contribute to higher rates of obesity, hypertension, and diabetes - all risk factors for heart disease. 
 
 ## Feature Engineering
 
@@ -334,47 +374,7 @@ one_hot_uci <- dummyVars(~ sex + fbs + restecg + thalach, data = uci) %>%
   predict(uci)
 ```
 
-## Insight
-Identify the region
-```{r}
-regions <- c(
-  CT = 'Northeast', ME = 'Northeast', MA = 'Northeast', NH = 'Northeast',
-  RI = 'Northeast', VT = 'Northeast', NJ = 'Northeast', NY = 'Northeast',
-  PA = 'Northeast', IL = 'Midwest', IN = 'Midwest', MI = 'Midwest',
-  OH = 'Midwest', WI = 'Midwest', IA = 'Midwest', KS = 'Midwest',
-  MN = 'Midwest', MO = 'Midwest', NE = 'Midwest', ND = 'Midwest',
-  SD = 'Midwest', DE = 'South', FL = 'South', GA = 'South',
-  MD = 'South', NC = 'South', SC = 'South', VA = 'South',
-  DC = 'South', WV = 'South', AL = 'South', KY = 'South',
-  MS = 'South', TN = 'South', AR = 'South', LA = 'South',
-  OK = 'South', TX = 'South', AZ = 'West', CO = 'West',
-  ID = 'West', MT = 'West', NV = 'West', NM = 'West',
-  UT = 'West', WY = 'West', AK = 'West', CA = 'West',
-  HI = 'West', OR = 'West', WA = 'West'
-)
-
-cdc <- cdc %>%
-  mutate(Region = regions[LocationAbbr])
-
-cdc <- na.omit(cdc)
-
-heart_disease_by_regions <- cdc %>%
-  group_by(Region) %>%
-  summarise(Total_Heart_Disease = sum(Data_Value_Per_100000_Population))
-
-ggplot(heart_disease_by_regions, aes(x = Region, 
-                                     y = Total_Heart_Disease, 
-                                     fill = Region)) +
-  geom_bar(stat = "identity", color = "black") +
-  theme_minimal() +
-  labs(title = "Total Heart Disease Cases by Region",
-       x = "Region",
-       y = "Total Cases per 100,000 Population")
-
-head(cdc)
-```
-The South region shows a significantly higher number of cases compared to the Midwest, Northeast, and West. The South is known for a culinary tradition that often includes fried foods, higher consumption of red meat, and sweetened beverages, which can contribute to higher rates of obesity, hypertension, and diabetes - all risk factors for heart disease. 
-
+## Modeling and Insights
 ```{r}
 heart_2022$sex <- as.numeric(factor(heart_2022$Sex))
 heart_2022$GeneralHealth <- as.numeric(factor(heart_2022$GeneralHealth))
@@ -418,6 +418,10 @@ test <- heart_2022[-indexes,]
 model <- glm(HadHeartAttack ~ ., data = train, family = binomial())
 
 summary(model)
+glance(model)
+
+#calculate McFadden's R-squared for model
+with(summary(model), 1 - deviance/null.deviance)
 
 predictions <- predict(model, test, type="response")
 predicted_classes <- ifelse(predictions > 0.5, "yes", "no")
@@ -476,6 +480,10 @@ model <- glm(have_heart_disease ~ ., data = train, family = binomial())
 
 # Summarize the model
 summary(model)
+glace(model)
+
+#calculate McFadden's R-squared for model
+with(summary(model), 1 - deviance/null.deviance)
 
 predictions <- predict(model, test, type="response")
 predicted_classes <- ifelse(predictions > 0.5, "yes", "no")
