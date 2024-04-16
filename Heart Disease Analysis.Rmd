@@ -166,6 +166,82 @@ drops <- c("PhysicalHealthDays", "MentalHealthDays", "LastCheckupTime",
 heart_2022 <- heart_2022[ , !(names(heart_2022) %in% drops)]
 ```
 
+
+## Exploratory Data Analysis
+
+```{r}
+heart_2022
+```
+
+## Gender vs factors to find relationships
+
+*gender vs sleep and how it affect heart disease*
+
+```{r}
+ggplot(heart_2022, aes(x = Sex, y = SleepHours)) +
+  geom_boxplot() +
+  labs(x = "Sex", y = "Sleep Hours", title = "Sleep Hours vs Sex")
+```
+
+*seems like male and female both have similar sleep schedule in general with females having ever so slightly more sleep than male. Let's dive in and see if it differs if we only consider the candidates with heart disease.*
+
+```{r}
+# Filter the dataset
+heart_attack_data <- subset(heart_2022, HadHeartAttack == "Yes")
+
+# Plot SleepHours vs Sex for individuals who had a heart attack
+ggplot(heart_attack_data, aes(x = Sex, y = SleepHours)) +
+  geom_boxplot() +
+  labs(x = "Sex", y = "Sleep Hours", title = "Sleep Hours vs Sex for Individuals with Heart Attack")
+
+```
+
+
+```{r}
+heart_attack_stroke_data <- subset(heart_2022, HadHeartAttack == "Yes" & HadStroke == "Yes")
+
+# Plot SleepHours vs Sex for individuals who had both a heart attack and a stroke
+ggplot(heart_attack_stroke_data, aes(x = Sex, y = SleepHours)) +
+  geom_boxplot() +
+  labs(x = "Sex", y = "Sleep Hours", title = "Sleep Hours vs Sex for Individuals with Heart Attack and Stroke")
+
+```
+
+*We can see that the sleep pattern has varied a little with slightly less sleep in the edges for females with both heart attack and stroke but on average, it hasn't varied much, so it may not really be a factor that eventually leads to heart attack or strokes ? maybe just a little. Let's explore other factors now*
+
+*according to cdc, a healthy body mass index (BMI) for young and middle-aged adults is 18.5–24.9. so filtering out the data to just have that BMI and seeing heart attack relationships*
+
+
+```{r}
+healthy_BMI <- subset(heart_2022, BMI >= 18.5 & BMI <= 24.9)
+```
+
+```{r}
+# Now, filter for individuals with both a heart attack and a stroke
+heart_attack_stroke_filtered_data <- subset(healthy_BMI, HadHeartAttack == "Yes" & HadStroke == "Yes")
+
+# Plot the count of individuals who had or didn't have a heart attack
+ggplot(healthy_BMI, aes(x = factor(HadHeartAttack), fill = HadHeartAttack)) +
+  geom_bar() +
+  scale_fill_manual(values = c("Yes" = "red", "No" = "blue")) +
+  labs(x = "Had Heart Attack", y = "Count", title = "Count of Individuals with Heart Attack (BMI: 18.5-24.9)") +
+  geom_text(stat='count', aes(label=..count..), vjust=-0.5)
+```
+
+```{r}
+unhealthy_BMI <- subset(heart_2022, BMI >= 30)
+```
+
+```{r}
+# Plot the count of individuals who had or didn't have a heart attack
+ggplot(unhealthy_BMI, aes(x = factor(HadHeartAttack), fill = HadHeartAttack)) +
+  geom_bar() +
+  scale_fill_manual(values = c("Yes" = "red", "No" = "blue")) +
+  labs(x = "Had Heart Attack", y = "Count", title = "Count of Individuals with Heart Attack (BMI > 30)") +
+  geom_text(stat='count', aes(label=..count..), vjust=-0.5)
+```
+*as we can compare based on CDC's information, this shows us that people in unhealthy BMI range (BMI > 30) have a much higher chance of getting a heart attack. It is safe to say that this is one of the factors that lead to heart attack.*
+
 ## Feature Engineering
 
 ### Binning Age and BMI:
