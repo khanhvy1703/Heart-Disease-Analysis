@@ -388,7 +388,7 @@ ggplot(heart_disease_by_regions, aes(x = Region,
                                      fill = Region)) +
   geom_bar(stat = "identity", color = "black") +
   theme_minimal() +
-  labs(title = "Total Heart Disease Cases by Region",
+  labs(title = "Mortality by Region",
        x = "Region",
        y = "Total Cases per 100,000 Population")
 ```
@@ -550,6 +550,16 @@ roc_response <- roc(response = risk_test_set$have_heart_disease,
 plot(roc_response)
 auc(roc_response)
 ```
+Calculate F-1 Score: 
+```{r}
+P <- 49 / (49 + 15) # precision
+P
+
+R <- 49 / (49 + 8) # recall
+R
+
+2 * (P * R) / (P + R) # F1
+```
 
 ### Predict Heart Acttack Risk
 One-hot code the dataset
@@ -673,12 +683,59 @@ print(paste("Accuracy of the model:", accuracy))
 
 ## Motarlity of Heart Disease based on Region
 Since there is not any columns for us to convert it into binary columns to apply logistic regression to predict the mortality rate based on region, we will use linear regression
+### One-hot code
 ```{r}
-#one-hot code Region
+# Region
 cdc <- cbind(cdc, model.matrix(~ Region - 1, data = cdc))
+
+# Stratification1 and Stratification2
+cdc <- cbind(cdc, model.matrix(~ Stratification1 + Stratification2 - 1, data = cdc))
 ```
 
-# Apply linear regression
+### Rename the one-hot code columns: 
+```{r}
+# rename the columns
+colnames(cdc)[colnames(cdc) == 
+                "Stratification2American Indian or Alaska Native"] <- 
+  "Stratification2American_Indian_or_Alaska_Native"
+
+colnames(cdc)[colnames(cdc) == 
+                "Stratification2Asian and Pacific Islander"] <- 
+  "Stratification2Asian_and_Pacific_Islander"
+
+colnames(cdc)[colnames(cdc) == 
+                "Stratification2More than one race"] <- 
+  "Stratification2More_than_one_race"
+
+colnames(cdc)[colnames(cdc) == 
+                "Stratification2Native Hawaiian or Other Pacific Islander"] <- 
+  "Stratification2Native_Hawaiian_or_Other_Pacific_Islander"
+```
+
+### Apply linear regression
+
+#### Just South
+```{r}
+set.seed(2)
+train_indices <- createDataPartition(cdc$Data_Value_Per_100000_Population, 
+                                     p = 0.8, 
+                                     list = FALSE)
+train <- cdc[train_indices, ]
+test <- cdc[-train_indices, ]
+
+model <- lm(Data_Value_Per_100000_Population ~ RegionSouth, 
+            data = train)
+
+# Summary of the model
+summary(model)
+
+# Prediction
+predictions <- predict(model, test)
+mse <- mean((predictions - test$Data_Value_Per_100000_Population)^2)
+print(paste("Mean Squared Error:", mse))
+```
+
+#### All regions
 ```{r}
 set.seed(2)
 train_indices <- createDataPartition(cdc$Data_Value_Per_100000_Population, 
@@ -704,31 +761,9 @@ The Multiple R-squared value of 0.03426 suggests that only about 3.43% of the va
 
 The model shows statistical significance but lacks predictive strength (low R-squared and high MSE), implying that while there are some effects of region on mortality rates, there are likely many other factors not captured by this model that influence mortality rates much more significantly. It is difficult just based on this dataset to predict the heart disease mortality based on only region.
 
-Try with other factors `Stratification1` and `Stratification2` (sex, races) to see if model will better:
+#### All regions + Sex + Races
+Try with other factors `Stratification1` and `Stratification2` (sex, races) to see if model will better. Apply linear regression and run prediction in the new model:
 ```{r}
-# one-hot code Stratification1 and Stratification2
-cdc <- cbind(cdc, model.matrix(~ Stratification1 + Stratification2 - 1, data = cdc))
-```
-
-Apply linear regression and run prediction in the new model:
-```{r}
-# rename the model
-colnames(cdc)[colnames(cdc) == 
-                "Stratification2American Indian or Alaska Native"] <- 
-  "Stratification2American_Indian_or_Alaska_Native"
-
-colnames(cdc)[colnames(cdc) == 
-                "Stratification2Asian and Pacific Islander"] <- 
-  "Stratification2Asian_and_Pacific_Islander"
-
-colnames(cdc)[colnames(cdc) == 
-                "Stratification2More than one race"] <- 
-  "Stratification2More_than_one_race"
-
-colnames(cdc)[colnames(cdc) == 
-                "Stratification2Native Hawaiian or Other Pacific Islander"] <- 
-  "Stratification2Native_Hawaiian_or_Other_Pacific_Islander"
-
 # retrain the model 
 set.seed(2)
 train_indices <- createDataPartition(cdc$Data_Value_Per_100000_Population,
