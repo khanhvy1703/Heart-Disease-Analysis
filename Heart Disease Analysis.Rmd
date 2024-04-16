@@ -299,6 +299,66 @@ head(cdc)
 The South region shows a significantly higher number of cases compared to the Midwest, Northeast, and West. The South is known for a culinary tradition that often includes fried foods, higher consumption of red meat, and sweetened beverages, which can contribute to higher rates of obesity, hypertension, and diabetes - all risk factors for heart disease. 
 
 ```{r}
+heart_2022$sex <- as.numeric(factor(heart_2022$Sex))
+heart_2022$GeneralHealth <- as.numeric(factor(heart_2022$GeneralHealth))
+heart_2022$PhysicalActivities <- as.numeric(factor(heart_2022$PhysicalActivities))
+heart_2022$HadAngina <- as.numeric(factor(heart_2022$HadAngina))
+heart_2022$HadSkinCancer <- as.numeric(factor(heart_2022$HadSkinCancer))
+heart_2022$HadArthritis <- as.numeric(factor(heart_2022$HadArthritis))
+heart_2022$HadDiabetes <- as.numeric(factor(heart_2022$HadDiabetes))
+heart_2022$HadStroke <- as.numeric(factor(heart_2022$HadStroke))
+heart_2022$HadCOPD <- as.numeric(factor(heart_2022$HadCOPD))
+heart_2022$HadDepressiveDisorder <- as.numeric(factor(heart_2022$HadDepressiveDisorder))
+heart_2022$HadKidneyDisease <- as.numeric(factor(heart_2022$HadKidneyDisease))
+heart_2022$DeafOrHardOfHearing <- as.numeric(factor(heart_2022$DeafOrHardOfHearing))
+heart_2022$BlindOrVisionDifficulty <- as.numeric(factor(heart_2022$BlindOrVisionDifficulty))
+heart_2022$DifficultyConcentrating <- as.numeric(factor(heart_2022$DifficultyConcentrating))
+heart_2022$DifficultyWalking <- as.numeric(factor(heart_2022$DifficultyWalking))
+heart_2022$DifficultyDressingBathing <- as.numeric(factor(heart_2022$DifficultyDressingBathing))
+heart_2022$DifficultyErrands <- as.numeric(factor(heart_2022$DifficultyErrands))
+heart_2022$SmokerStatus <- as.numeric(factor(heart_2022$SmokerStatus))
+heart_2022$ECigaretteUsage <- as.numeric(factor(heart_2022$ECigaretteUsage))
+heart_2022$RaceEthnicityCategory <- as.numeric(factor(heart_2022$RaceEthnicityCategory))
+heart_2022$AgeCategory <- as.numeric(factor(heart_2022$AgeCategory))
+heart_2022$AlcoholDrinkers <- as.numeric(factor(heart_2022$AlcoholDrinkers))
+heart_2022$HIVTesting <- as.numeric(factor(heart_2022$HIVTesting))
+heart_2022$CovidPos <- as.numeric(factor(heart_2022$CovidPos))
+heart_2022$BMICategory <- as.numeric(factor(heart_2022$BMICategory))
+heart_2022$SleepCategory <- as.numeric(factor(heart_2022$SleepCategory))
+heart_2022$HasConditions <- as.numeric(factor(heart_2022$HasConditions))
+heart_2022$Vaccinated <- as.numeric(factor(heart_2022$Vaccinated))
+heart_2022$Sex <- as.numeric(factor(heart_2022$Sex))
+
+heart_2022$HadHeartAttack <- as.factor(heart_2022$HadHeartAttack)
+
+# Split data into training and test sets
+set.seed(123) # for reproducibility
+indexes <- createDataPartition(heart_2022$HadHeartAttack, p=0.8, list=FALSE)
+train <- heart_2022[indexes,]
+test <- heart_2022[-indexes,]
+
+# Fit the logistic regression model
+model <- glm(HadHeartAttack ~ ., data = train, family = binomial())
+
+summary(model)
+
+predictions <- predict(model, test, type="response")
+predicted_classes <- ifelse(predictions > 0.5, "yes", "no")
+predicted_classes <- factor(predicted_classes, levels = c("no", "yes"))
+
+# ROC curve
+roc_response <- roc(response = test$HadHeartAttack, predictor = as.numeric(predictions))
+plot(roc_response)
+auc(roc_response)
+```
+
+```{r}
+# Run linear regression model
+model <- lm(Data_Value_Per_100000_Population ~ Region, data = cdc)
+
+```
+
+```{r}
 # Encode categorical variables
 uci$sex <- as.numeric(factor(uci$sex))
 uci$cp <- as.numeric(factor(uci$cp))
