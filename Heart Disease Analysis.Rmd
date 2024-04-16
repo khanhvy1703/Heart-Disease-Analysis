@@ -29,6 +29,8 @@ library(dplyr)
 library(caret)
 library(pROC)
 library(tree)
+installed.packages("nnet")
+library(nnet)
 options(readr.show_col_types = FALSE)
 ```
 
@@ -440,6 +442,35 @@ plot(tree2)
 text(tree2,pretty=0)
 tree2$frame$yprob
 ```
+## Let's Get the accuracy for Artificial Neural Networks
+
+```{r}
+formula <- HadHeartAttack ~ sex + GeneralHealth + PhysicalActivities + 
+            HadAngina + HadSkinCancer + HadArthritis + HadDiabetes + 
+            HadStroke + HadCOPD + HadDepressiveDisorder + HadKidneyDisease + 
+            DeafOrHardOfHearing + BlindOrVisionDifficulty + DifficultyConcentrating + 
+            DifficultyWalking + DifficultyDressingBathing + DifficultyErrands + 
+            SmokerStatus + ECigaretteUsage + RaceEthnicityCategory + AgeCategory + 
+            AlcoholDrinkers + HIVTesting + CovidPos + BMICategory + SleepCategory + 
+            HasConditions + Vaccinated
+
+# Create the neural network model
+model <- nnet(formula, data = heart_2022, size = 5, rang = 0.1, decay = 5e-4, maxit = 1000)
+
+```
+```{r}
+# Summary of the model
+summary(model)
+
+# Generate predictions on the training data
+predictions <- predict(model, heart_2022, type = "class")
+
+# Calculate accuracy
+accuracy <- mean(predictions == heart_2022$HadHeartAttack)
+print(paste("Accuracy of the model:", accuracy))
+```
+
+** We get an accuracy of ~94% with neural network model which is very high. 
 
 ```{r}
 # Encode categorical variables
