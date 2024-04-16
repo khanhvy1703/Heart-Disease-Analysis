@@ -135,7 +135,7 @@ for (col in names(uci)) {
 uniqueValues <- sapply(uci, unique)
 ```
 
-## cleaning CDC data set
+## Clean the CDC data set
 ```{r}
 drops <- c("Georeference")
 heart_2019_2021 <- heart_2019_2021[ , !(names(heart_2019_2021) %in% drops)]
@@ -147,7 +147,7 @@ cdc <- data.frame(cdc)
 drops <- c("Year", "X_lon", "Y_lat", "Class", "DataSource", 
            "Data_Value_Footnote_Symbol", "Data_Value_Footnote",
            "StratificationCategory1", "StratificationCategory2",
-           "Data_Value_Unit")
+           "Data_Value_Unit", "LocationDesc", "Topic", "TopicID")
 cdc <- cdc[ , !(names(cdc) %in% drops)]
 
 # rename
@@ -162,6 +162,27 @@ for (col in names(cdc)) {
     cdc[[col]][is.na(cdc[[col]])] <- mode_val
   }
 }
+
+regions <- c(
+  CT = 'Northeast', ME = 'Northeast', MA = 'Northeast', NH = 'Northeast',
+  RI = 'Northeast', VT = 'Northeast', NJ = 'Northeast', NY = 'Northeast',
+  PA = 'Northeast', IL = 'Midwest', IN = 'Midwest', MI = 'Midwest',
+  OH = 'Midwest', WI = 'Midwest', IA = 'Midwest', KS = 'Midwest',
+  MN = 'Midwest', MO = 'Midwest', NE = 'Midwest', ND = 'Midwest',
+  SD = 'Midwest', DE = 'South', FL = 'South', GA = 'South',
+  MD = 'South', NC = 'South', SC = 'South', VA = 'South',
+  DC = 'South', WV = 'South', AL = 'South', KY = 'South',
+  MS = 'South', TN = 'South', AR = 'South', LA = 'South',
+  OK = 'South', TX = 'South', AZ = 'West', CO = 'West',
+  ID = 'West', MT = 'West', NV = 'West', NM = 'West',
+  UT = 'West', WY = 'West', AK = 'West', CA = 'West',
+  HI = 'West', OR = 'West', WA = 'West'
+)
+
+cdc <- cdc %>%
+  mutate(Region = regions[LocationAbbr])
+
+cdc <- na.omit(cdc)
 ```
 
 ## cleaning Kaggle data set
@@ -176,7 +197,7 @@ heart_2022 <- heart_2022[ , !(names(heart_2022) %in% drops)]
 ```
 
 ## Exploratory Data Analysis
-## Gender vs factors to find relationships
+### Gender vs factors to find relationships
 
 *gender vs sleep and how it affect heart disease*
 
@@ -358,27 +379,6 @@ ggplot(age_health_count_df, aes(x = GeneralHealth, y = Count)) +
 
 Identify the region
 ```{r}
-regions <- c(
-  CT = 'Northeast', ME = 'Northeast', MA = 'Northeast', NH = 'Northeast',
-  RI = 'Northeast', VT = 'Northeast', NJ = 'Northeast', NY = 'Northeast',
-  PA = 'Northeast', IL = 'Midwest', IN = 'Midwest', MI = 'Midwest',
-  OH = 'Midwest', WI = 'Midwest', IA = 'Midwest', KS = 'Midwest',
-  MN = 'Midwest', MO = 'Midwest', NE = 'Midwest', ND = 'Midwest',
-  SD = 'Midwest', DE = 'South', FL = 'South', GA = 'South',
-  MD = 'South', NC = 'South', SC = 'South', VA = 'South',
-  DC = 'South', WV = 'South', AL = 'South', KY = 'South',
-  MS = 'South', TN = 'South', AR = 'South', LA = 'South',
-  OK = 'South', TX = 'South', AZ = 'West', CO = 'West',
-  ID = 'West', MT = 'West', NV = 'West', NM = 'West',
-  UT = 'West', WY = 'West', AK = 'West', CA = 'West',
-  HI = 'West', OR = 'West', WA = 'West'
-)
-
-cdc <- cdc %>%
-  mutate(Region = regions[LocationAbbr])
-
-cdc <- na.omit(cdc)
-
 heart_disease_by_regions <- cdc %>%
   group_by(Region) %>%
   summarise(Total_Heart_Disease = sum(Data_Value_Per_100000_Population))
@@ -391,15 +391,12 @@ ggplot(heart_disease_by_regions, aes(x = Region,
   labs(title = "Total Heart Disease Cases by Region",
        x = "Region",
        y = "Total Cases per 100,000 Population")
-
-head(cdc)
 ```
 The South region shows a significantly higher number of cases compared to the Midwest, Northeast, and West. The South is known for a culinary tradition that often includes fried foods, higher consumption of red meat, and sweetened beverages, which can contribute to higher rates of obesity, hypertension, and diabetes - all risk factors for heart disease. 
 
 ## Feature Engineering
 
 ### Binning Age and BMI:
-
 Creating bins for BMI, sleep category to simplify the patterns for the machine learning algorithm.
 ```{r}
 # Binning BMI
@@ -420,7 +417,6 @@ heart_2022$SleepCategory <- cut(heart_2022$SleepHours, sleep_bins,
 ```
 
 ### Scaling Numerical Variables:
-
 Scaling can help improve the performance of algorithms like SVM or KNN. You can use scale() for this purpose.
 ```{r}
 heart_2022$ScaledHeight <- scale(heart_2022$HeightInMeters)
@@ -428,7 +424,6 @@ heart_2022$ScaledWeight <- scale(heart_2022$WeightInKilograms)
 ```
 
 ### Feature Combination:
-
 Creating new features based on existing ones. Creating a binary variable indicating whether a person has any pre-existing conditions.
 ```{r}
 heart_2022$HasConditions <- ifelse(heart_2022$HadHeartAttack == 'Yes' | 
@@ -488,6 +483,76 @@ one_hot_uci <- dummyVars(~ sex + fbs + restecg + thalach, data = uci) %>%
 ```
 
 ## Modeling and Insights
+### Predict Heart Disease Risk
+Encode categorical variables
+```{r}
+uci$sex <- as.numeric(factor(uci$sex))
+uci$cp <- as.numeric(factor(uci$cp))
+uci$fbs <- as.numeric(factor(uci$fbs))
+uci$restecg <- as.numeric(factor(uci$restecg))
+uci$exang <- as.numeric(factor(uci$exang))
+uci$slope <- as.numeric(factor(uci$slope))
+uci$thal <- as.numeric(factor(uci$thal))
+uci$have_heart_disease <- as.factor(uci$have_heart_disease)
+```
+
+Apply logistic regression:
+```{r}
+# Combining rare levels
+level_counts <- table(uci$thalach)
+rare_levels <- names(level_counts[level_counts < 5])
+
+# Replace rare levels with a common category
+uci$thalach <- as.character(uci$thalach)
+uci$thalach[uci$thalach %in% rare_levels] <- "Other"
+uci$thalach <- factor(uci$thalach)
+
+# Split data into training and test sets 80/20
+# have_heart_disease as the dependent variable 
+# and all other variables as independent variables.
+set.seed(1)
+risk_train <- createDataPartition(uci$have_heart_disease, p=0.8, list=FALSE)
+risk_train_set <- uci[risk_train,]
+risk_test_set <- uci[-risk_train,]
+
+risk_train_set$thalach <- factor(risk_train_set$thalach, 
+                                 levels = levels(uci$thalach))
+risk_test_set$thalach <- factor(risk_test_set$thalach, 
+                                levels = levels(uci$thalach))
+
+# Fit the logistic regression model
+model <- glm(have_heart_disease ~ ., 
+             data = risk_train_set, 
+             family = binomial(link="logit"))
+
+# Summarize the model
+summary(model)
+
+# calculate McFadden's R-squared for model
+cat("McFadden's R-squared", 
+    with(summary(model), 1 - deviance/null.deviance),
+         "\n")
+
+predictions <- predict(model, risk_test_set, type="response")
+predicted_classes <- ifelse(predictions > 0.5, "yes", "no")
+predicted_classes <- factor(predicted_classes, levels = c("no", "yes"))
+
+hist(predictions)
+
+# Confusion matrix to see the accuracy, sensitivity, and specificity
+confusionMatrix(predicted_classes, risk_test_set$have_heart_disease)
+```
+
+Get ROC curve
+```{r}
+roc_response <- roc(response = risk_test_set$have_heart_disease, 
+                    predictor = as.numeric(predictions))
+plot(roc_response)
+auc(roc_response)
+```
+
+### Predict Heart Acttack Risk
+One-hot code the dataset
 ```{r}
 heart_2022$sex <- as.numeric(factor(heart_2022$Sex))
 heart_2022$GeneralHealth <- as.numeric(factor(heart_2022$GeneralHealth))
@@ -520,7 +585,10 @@ heart_2022$Vaccinated <- as.numeric(factor(heart_2022$Vaccinated))
 heart_2022$Sex <- as.numeric(factor(heart_2022$Sex))
 
 heart_2022$HadHeartAttack <- as.factor(heart_2022$HadHeartAttack)
+```
 
+Apply logistic regression
+```{r}
 # Split data into training and test sets
 set.seed(123) # for reproducibility
 indexes <- createDataPartition(heart_2022$HadHeartAttack, p=0.8, list=FALSE)
@@ -531,16 +599,30 @@ test <- heart_2022[-indexes,]
 model <- glm(HadHeartAttack ~ ., data = train, family = binomial())
 
 summary(model)
-glance(model)
 
-#calculate McFadden's R-squared for model
-with(summary(model), 1 - deviance/null.deviance)
+# calculate McFadden's R-squared for model
+cat("McFadden's R-squared", 
+    with(summary(model), 1 - deviance/null.deviance),
+         "\n")
 
 predictions <- predict(model, test, type="response")
 predicted_classes <- ifelse(predictions > 0.5, "yes", "no")
 predicted_classes <- factor(predicted_classes, levels = c("no", "yes"))
 
-# ROC curve
+hist(predictions)
+
+levels(test$HadHeartAttack) <- c("no", "yes")
+levels(predicted_classes) <- c("no", "yes")
+
+table(predicted_classes)
+table(test$HadHeartAttack)
+
+# Confusion matrix to see the accuracy, sensitivity, and specificity
+confusionMatrix(predicted_classes, test$HadHeartAttack)
+```
+
+Get ROC curve
+```{r}
 roc_response <- roc(response = test$HadHeartAttack, predictor = as.numeric(predictions))
 plot(roc_response)
 auc(roc_response)
@@ -573,6 +655,8 @@ formula <- HadHeartAttack ~ sex + GeneralHealth + PhysicalActivities +
 model <- nnet(formula, data = heart_2022, size = 5, rang = 0.1, decay = 5e-4, maxit = 1000)
 
 ```
+
+Evaluate the model
 ```{r}
 # Summary of the model
 summary(model)
@@ -587,82 +671,92 @@ print(paste("Accuracy of the model:", accuracy))
 
 ** We get an accuracy of ~94% with neural network model which is very high. 
 
+## Motarlity of Heart Disease based on Region
+Since there is not any columns for us to convert it into binary columns to apply logistic regression to predict the mortality rate based on region, we will use linear regression
 ```{r}
-# Encode categorical variables
-uci$sex <- as.numeric(factor(uci$sex))
-uci$cp <- as.numeric(factor(uci$cp))
-uci$fbs <- as.numeric(factor(uci$fbs))
-uci$restecg <- as.numeric(factor(uci$restecg))
-uci$exang <- as.numeric(factor(uci$exang))
-uci$slope <- as.numeric(factor(uci$slope))
-uci$thal <- as.numeric(factor(uci$thal))
-uci$have_heart_disease <- as.factor(uci$have_heart_disease)
-
-# Combining rare levels
-level_counts <- table(uci$thalach)
-rare_levels <- names(level_counts[level_counts < 5])
-
-# Replace rare levels with a common category
-uci$thalach <- as.character(uci$thalach)
-uci$thalach[uci$thalach %in% rare_levels] <- "Other"
-uci$thalach <- factor(uci$thalach)
-
-
-# Split data into training and test sets
-set.seed(123) # for reproducibility
-indexes <- createDataPartition(uci$have_heart_disease, p=0.8, list=FALSE)
-train <- uci[indexes,]
-test <- uci[-indexes,]
-
-train$thalach <- factor(train$thalach, levels = levels(uci$thalach))
-test$thalach <- factor(test$thalach, levels = levels(uci$thalach))
-
-# Fit the logistic regression model
-model <- glm(have_heart_disease ~ ., data = train, family = binomial())
-
-# Summarize the model
-summary(model)
-glace(model)
-
-#calculate McFadden's R-squared for model
-with(summary(model), 1 - deviance/null.deviance)
-
-predictions <- predict(model, test, type="response")
-predicted_classes <- ifelse(predictions > 0.5, "yes", "no")
-predicted_classes <- factor(predicted_classes, levels = c("no", "yes"))
-
-# Confusion matrix to see the accuracy, sensitivity, and specificity
-confusionMatrix(predicted_classes, test$have_heart_disease)
-
-# ROC curve
-roc_response <- roc(response = test$have_heart_disease, predictor = as.numeric(predictions))
-plot(roc_response)
-auc(roc_response)
+#one-hot code Region
+cdc <- cbind(cdc, model.matrix(~ Region - 1, data = cdc))
 ```
+
+# Apply linear regression
 ```{r}
-str(cdc)
-# get unique values
-uniqueValues <- sapply(cdc, unique)
-uniqueValues
+set.seed(2)
+train_indices <- createDataPartition(cdc$Data_Value_Per_100000_Population, 
+                                     p = 0.8, 
+                                     list = FALSE)
+train <- cdc[train_indices, ]
+test <- cdc[-train_indices, ]
 
-# Convert Region to a factor if it's not already
-cdc$Region <- as.factor(cdc$Region)
-
-# Run linear regression model
-model <- lm(Data_Value_Per_100000_Population ~ Region, data = cdc)
+model <- lm(Data_Value_Per_100000_Population ~ 
+              RegionWest + RegionSouth + RegionNortheast + RegionMidwest, 
+            data = train)
 
 # Summary of the model
 summary(model)
 
-# Plotting the relationship
-ggplot(cdc, aes(x = Region, y = Data_Value_Per_100000_Population)) +
-  geom_boxplot() +
-  geom_jitter(alpha = 0.3, color = "tomato") +
-  labs(y = "Heart Disease Mortality Rate per 100,000 Population",
-       x = "Region",
-       title = "Heart Disease Mortality Rate by Region")
-
-# Diagnostic plots
-par(mfrow = c(2,2))
-plot(model)
+# Prediction
+predictions <- predict(model, test)
+mse <- mean((predictions - test$Data_Value_Per_100000_Population)^2)
+print(paste("Mean Squared Error:", mse))
 ```
+
+The Multiple R-squared value of 0.03426 suggests that only about 3.43% of the variability in mortality rate is explained by the differences in regions. This is quite low, indicating that the model does not capture much of the variability in mortality rates across different regions. 
+
+The model shows statistical significance but lacks predictive strength (low R-squared and high MSE), implying that while there are some effects of region on mortality rates, there are likely many other factors not captured by this model that influence mortality rates much more significantly. It is difficult just based on this dataset to predict the heart disease mortality based on only region.
+
+Try with other factors `Stratification1` and `Stratification2` (sex, races) to see if model will better:
+```{r}
+# one-hot code Stratification1 and Stratification2
+cdc <- cbind(cdc, model.matrix(~ Stratification1 + Stratification2 - 1, data = cdc))
+```
+
+Apply linear regression and run prediction in the new model:
+```{r}
+# rename the model
+colnames(cdc)[colnames(cdc) == 
+                "Stratification2American Indian or Alaska Native"] <- 
+  "Stratification2American_Indian_or_Alaska_Native"
+
+colnames(cdc)[colnames(cdc) == 
+                "Stratification2Asian and Pacific Islander"] <- 
+  "Stratification2Asian_and_Pacific_Islander"
+
+colnames(cdc)[colnames(cdc) == 
+                "Stratification2More than one race"] <- 
+  "Stratification2More_than_one_race"
+
+colnames(cdc)[colnames(cdc) == 
+                "Stratification2Native Hawaiian or Other Pacific Islander"] <- 
+  "Stratification2Native_Hawaiian_or_Other_Pacific_Islander"
+
+# retrain the model 
+set.seed(2)
+train_indices <- createDataPartition(cdc$Data_Value_Per_100000_Population,
+                                     p = 0.8,
+                                     list = FALSE)
+train <- cdc[train_indices, ]
+test <- cdc[-train_indices, ]
+
+model <- lm(Data_Value_Per_100000_Population ~ 
+              RegionWest + RegionSouth + RegionNortheast + RegionMidwest +
+              Stratification1Female + Stratification1Male + 
+              Stratification1Overall + Stratification2Black +
+              Stratification2American_Indian_or_Alaska_Native + 
+              Stratification2Asian + Stratification2Hispanic +
+              Stratification2Asian_and_Pacific_Islander +
+              Stratification2More_than_one_race + Stratification2Overall +
+              Stratification2Native_Hawaiian_or_Other_Pacific_Islander + 
+              Stratification2White,
+            data = train)
+
+# Summary of the model
+summary(model)
+
+# Prediction
+predictions <- predict(model, test)
+mse <- mean((predictions - test$Data_Value_Per_100000_Population)^2)
+print(paste("Mean Squared Error:", mse))
+```
+The Stratification1Male and Stratification1Female suggest significant differences based on gender, with males (positive coefficient) having a higher mortality rate compared to the overall population. The positive coefficient for Stratification2Black indicates higher mortality rates for Black individuals compared to the baseline race 
+
+However the Multiple R-squared value is 0.254, which is not very high and MSE is still high. They indicate that the model still shows the lack of predictive strength. We may want to check more factors unfortunately the data is limited. 
