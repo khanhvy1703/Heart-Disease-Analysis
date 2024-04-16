@@ -643,11 +643,23 @@ auc(roc_response)
 ```{r}
 # Let's check the decision Tree
 set.seed(2904)
-tree2<-tree(HadHeartAttack~.,method="class",data=train)
+tree2<-tree(HadHeartAttack~ .,method="class",data=train)
 tree2
+
 plot(tree2)
-text(tree2,pretty=0)
+text(tree2, pretty=0, cex=0.8, pos=2)  
 tree2$frame$yprob
+
+summary(tree2)
+
+testPredictions <- predict(tree2, newdata = test, type = "class")
+
+test$HadHeartAttack <- factor(test$HadHeartAttack, levels = c("No", "Yes"))
+train$HadHeartAttack <- factor(train$HadHeartAttack, levels = c("No", "Yes"))
+levels(test$HadHeartAttack)
+levels(train$HadHeartAttack)
+
+predictions <- predict(tree2, newdata = test, type = "class")
 ```
 ## Let's Get the accuracy for Artificial Neural Networks
 
