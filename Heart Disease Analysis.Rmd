@@ -41,29 +41,34 @@ library(nnet)
 options(readr.show_col_types = FALSE)
 ```
 
+## Import Dataset 
 
-## Import Dataset 1 - UCI
+### UCI
 ```{r}
 hungarian <- read.csv("unprocessed-data-set/UCI/processed.cleveland.data")
 switzerland <- read.csv("unprocessed-data-set/UCI/processed.va.data")
 ```
 
-## Import Dataset 2 - CDC 
+### CDC 
 ```{r}
-heart_2016_2018 <- read.csv("unprocessed-data-set/CDC/Heart_Disease_Mortality_Data_Among_US_Adults_2016-2018.csv")
+heart_2016_2018 <- read.csv(
+  "unprocessed-data-set/CDC/Heart_Disease_Mortality_Data_Among_US_Adults_2016-2018.csv")
 
-heart_2019_2021 <- read.csv("unprocessed-data-set/CDC/Heart_Disease_Mortality_Data_Among_US_Adults_2019-2021.csv")
+heart_2019_2021 <- read.csv(
+  "unprocessed-data-set/CDC/Heart_Disease_Mortality_Data_Among_US_Adults_2019-2021.csv")
 
-stoke_2019_2021 <- read.csv("unprocessed-data-set/CDC/Stroke_Mortality_Data_Among_US_Adults_2019-2021.csv")
+stoke_2019_2021 <- read.csv(
+  "unprocessed-data-set/CDC/Stroke_Mortality_Data_Among_US_Adults_2019-2021.csv")
 ```
 
-## Import Dataset 3 - Kaggle
+### Kaggle
 ```{r}
 heart_2022 <- read.csv("unprocessed-data-set/Kaggle/heart_2022_no_nans.csv")
 ```
 
 
-## Cleaning UCI data set
+## Cleaning data set
+### UCI
 ```{r}
 # tidy data
 dataLists <- list(hungarian, switzerland)
@@ -135,7 +140,7 @@ for (col in names(uci)) {
 uniqueValues <- sapply(uci, unique)
 ```
 
-## Clean the CDC data set
+### CDC
 ```{r}
 drops <- c("Georeference")
 heart_2019_2021 <- heart_2019_2021[ , !(names(heart_2019_2021) %in% drops)]
@@ -151,7 +156,8 @@ drops <- c("Year", "X_lon", "Y_lat", "Class", "DataSource",
 cdc <- cdc[ , !(names(cdc) %in% drops)]
 
 # rename
-colnames(cdc)[colnames(cdc) == "Data_Value"] <- "Data_Value_Per_100000_Population"
+colnames(cdc)[colnames(cdc) == "Data_Value"] <- 
+  "Data_Value_Per_100000_Population"
 
 for (col in names(cdc)) {
   if (is.numeric(cdc[[col]])) {
@@ -185,7 +191,7 @@ cdc <- cdc %>%
 cdc <- na.omit(cdc)
 ```
 
-## cleaning Kaggle data set
+### Kaggle
 ```{r}
 # drop unnecessary columns
 drops <- c("PhysicalHealthDays", "MentalHealthDays", "LastCheckupTime", 
@@ -216,7 +222,9 @@ heart_attack_data <- subset(heart_2022, HadHeartAttack == "Yes")
 # Plot SleepHours vs Sex for individuals who had a heart attack
 ggplot(heart_attack_data, aes(x = Sex, y = SleepHours)) +
   geom_boxplot() +
-  labs(x = "Sex", y = "Sleep Hours", title = "Sleep Hours vs Sex for Individuals with Heart Attack")
+  labs(x = "Sex", 
+       y = "Sleep Hours", 
+       title = "Sleep Hours vs Sex for Individuals with Heart Attack")
 
 ```
 
@@ -227,7 +235,9 @@ heart_attack_stroke_data <- subset(heart_2022, HadHeartAttack == "Yes" & HadStro
 # Plot SleepHours vs Sex for individuals who had both a heart attack and a stroke
 ggplot(heart_attack_stroke_data, aes(x = Sex, y = SleepHours)) +
   geom_boxplot() +
-  labs(x = "Sex", y = "Sleep Hours", title = "Sleep Hours vs Sex for Individuals with Heart Attack and Stroke")
+  labs(x = "Sex", 
+       y = "Sleep Hours", 
+       title = "Sleep Hours vs Sex for Individuals with Heart Attack and Stroke")
 
 ```
 
@@ -243,13 +253,17 @@ healthy_BMI <- subset(heart_2022, BMI >= 18.5 & BMI <= 24.9)
 
 ```{r}
 # Now, filter for individuals with both a heart attack and a stroke
-heart_attack_stroke_filtered_data <- subset(healthy_BMI, HadHeartAttack == "Yes" & HadStroke == "Yes")
+heart_attack_stroke_filtered_data <- subset(healthy_BMI, 
+                                            HadHeartAttack == "Yes" & 
+                                              HadStroke == "Yes")
 
 # Plot the count of individuals who had or didn't have a heart attack
 ggplot(healthy_BMI, aes(x = factor(HadHeartAttack), fill = HadHeartAttack)) +
   geom_bar() +
   scale_fill_manual(values = c("Yes" = "red", "No" = "blue")) +
-  labs(x = "Had Heart Attack", y = "Count", title = "Count of Individuals with Heart Attack (BMI: 18.5-24.9)") +
+  labs(x = "Had Heart Attack", 
+       y = "Count", 
+       title = "Count of Individuals with Heart Attack (BMI: 18.5-24.9)") +
   geom_text(stat='count', aes(label=..count..), vjust=-0.5)
 ```
 
@@ -262,7 +276,9 @@ unhealthy_BMI <- subset(heart_2022, BMI >= 30)
 ggplot(unhealthy_BMI, aes(x = factor(HadHeartAttack), fill = HadHeartAttack)) +
   geom_bar() +
   scale_fill_manual(values = c("Yes" = "red", "No" = "blue")) +
-  labs(x = "Had Heart Attack", y = "Count", title = "Count of Individuals with Heart Attack (BMI > 30)") +
+  labs(x = "Had Heart Attack", 
+       y = "Count", 
+       title = "Count of Individuals with Heart Attack (BMI > 30)") +
   geom_text(stat='count', aes(label=..count..), vjust=-0.5)
 ```
 *as we can compare based on CDC's information, this shows us that people in unhealthy BMI range (BMI > 30) have a much higher chance of getting a heart attack. It is safe to say that this is one of the factors that lead to heart attack.*
@@ -281,8 +297,10 @@ names(heart_attack_count_df) <- c("AgeCategory", "Count")
 # Plot Age vs Count using a bar graph
 ggplot(heart_attack_count_df, aes(x = AgeCategory, y = Count)) +
   geom_bar(stat = "identity", fill = "skyblue") +
-  labs(x = "Age Category", y = "Count of Heart Attacks", title = "Count of Heart Attacks in Different Age Categories") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels for better readability
+  labs(x = "Age Category", 
+       y = "Count of Heart Attacks", 
+       title = "Count of Heart Attacks in Different Age Categories") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 *Okay, clearly we can see the trend here. There seems to be an increasing positive pattern with the number of individuals having heart attacks as the age category gets higher ie. older. To answer our question, yes older age is likely to lead to heart attack.*
@@ -291,7 +309,9 @@ ggplot(heart_attack_count_df, aes(x = AgeCategory, y = Count)) +
 
 ```{r}
 # Filter the dataset where SmokerStatus is either 'Current smoker - now smokes every day' or 'Former smoker'
-habits_data <- subset(heart_2022, SmokerStatus == "Current smoker - now smokes every day" | SmokerStatus == "Former smoker")
+habits_data <- subset(heart_2022, 
+                      SmokerStatus == "Current smoker - now smokes every day" | 
+                        SmokerStatus == "Former smoker")
 
 # Group the data by AgeCategory and calculate the count in each group
 smoker_count <- table(habits_data$AgeCategory)
@@ -303,8 +323,10 @@ names(smoker_count_df) <- c("AgeCategory", "Count")
 # Plot AgeCategory vs Count using a bar graph
 ggplot(smoker_count_df, aes(x = AgeCategory, y = Count)) +
   geom_bar(stat = "identity", fill = "skyblue") +
-  labs(x = "Age Category", y = "Count of Smokers", title = "Count of Smokers in Different Age Categories") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels for better readability
+  labs(x = "Age Category", 
+       y = "Count of Smokers", 
+       title = "Count of Smokers in Different Age Categories") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 ```{r}
@@ -321,13 +343,17 @@ names(smoker_count_df) <- c("AgeCategory", "Count")
 # Plot AgeCategory vs Count using a bar graph
 ggplot(smoker_count_df, aes(x = AgeCategory, y = Count)) +
   geom_bar(stat = "identity", fill = "skyblue") +
-  labs(x = "Age Category", y = "Count of Drinkers", title = "Count of Drinkers in Different Age Categories") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels for better readability
+  labs(x = "Age Category",
+       y = "Count of Drinkers", 
+       title = "Count of Drinkers in Different Age Categories") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 ```{r}
 # Filter the dataset where SmokerStatus is either 'Current smoker - now smokes every day' or 'Former smoker'
-habits_data <- subset(heart_2022, AlcoholDrinkers == 'Yes' & (SmokerStatus == "Current smoker - now smokes every day" | SmokerStatus == "Former smoker"))
+habits_data <- subset(heart_2022, AlcoholDrinkers == 'Yes' & 
+                        (SmokerStatus == "Current smoker - now smokes every day" 
+                         | SmokerStatus == "Former smoker"))
 
 # Group the data by AgeCategory and calculate the count in each group
 smoker_count <- table(habits_data$AgeCategory)
@@ -339,8 +365,10 @@ names(smoker_count_df) <- c("AgeCategory", "Count")
 # Plot AgeCategory vs Count using a bar graph
 ggplot(smoker_count_df, aes(x = AgeCategory, y = Count)) +
   geom_bar(stat = "identity", fill = "skyblue") +
-  labs(x = "Age Category", y = "Count of Drinkers & Smokers", title = "Count of Drinkers & Smokers in Different Age Categories") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels for better readability
+  labs(x = "Age Category", 
+       y = "Count of Drinkers & Smokers", 
+       title = "Count of Drinkers & Smokers in Different Age Categories") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 *This data clearly shows us that again, people that fall under the age category of 60 and above are more likely to be smokers and drinkers in general with a peak in 65-69 and a low in 80 or older category. So, it is safe to conclude that along with older age which depreciates your healthy and body condition in general, they also seem more likely to be drinkers/smokers or both which is a key contributor to heart attacks.*
 
@@ -348,9 +376,15 @@ ggplot(smoker_count_df, aes(x = AgeCategory, y = Count)) +
 
 ```{r}
 ggplot(heart_2022) + 
-  geom_point(aes(x = AgeCategory, y = ..count.., color = GeneralHealth), stat = "count") +
-  geom_line(aes(x = AgeCategory, y = ..count.., group = GeneralHealth, color = GeneralHealth), stat = "count") +
-  labs(x = "Age Category", y = "General Health Count", title = "Visual of Health condition vs Age Category") +
+  geom_point(aes(x = AgeCategory, 
+                 y = ..count.., color = GeneralHealth), 
+             stat = "count") +
+  geom_line(aes(x = AgeCategory, 
+                y = ..count.., group = GeneralHealth, 
+                color = GeneralHealth), stat = "count") +
+  labs(x = "Age Category", 
+       y = "General Health Count", 
+       title = "Visual of Health condition vs Age Category") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ```
@@ -358,7 +392,9 @@ ggplot(heart_2022) +
 
 ```{r}
 # Filter the dataset
-age_data <- subset(heart_2022, AgeCategory == 'Age 65 to 69' & HadHeartAttack == 'Yes')
+age_data <- subset(heart_2022, 
+                   AgeCategory == 'Age 65 to 69' & 
+                     HadHeartAttack == 'Yes')
 
 # Group the data by GeneralHealth and calculate the count in each group
 age_health_count <- table(age_data$GeneralHealth)
@@ -370,14 +406,16 @@ names(age_health_count_df) <- c("GeneralHealth", "Count")
 # Plot GeneralHealth vs Count
 ggplot(age_health_count_df, aes(x = GeneralHealth, y = Count)) +
   geom_bar(stat = "identity", fill = "skyblue") +
-  labs(x = "General Health", y = "Count", title = "Count of General Health in Age Category 'Age 65 to 69' with Heart Attack") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels for better readability
+  labs(x = "General Health", 
+       y = "Count", 
+       title = "Count of General Health in Age Category 'Age 65 to 69' with Heart Attack") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ```
 
 *Now to answer our question, people with generally good health condition get heart attacks the most in the 65-69 age category. So, from this observation we can conclude that general health probably has less to do with getting heart attacks. Comparing poor and excellent condition definitely people with poor conditions are likely to get heart attacks than ones with excellent*
 
-Identify the region
+### Region
 ```{r}
 heart_disease_by_regions <- cdc %>%
   group_by(Region) %>%
@@ -446,7 +484,7 @@ drops <- c("FluVaxLast12", "PneumoVaxEver")
 heart_2022 <- heart_2022[ , !(names(heart_2022) %in% drops)]
 ```
 
-## Feature Engineering for UCI data
+### Feature Engineering for UCI data
 ```{r}
 # Age Binning
 uci <- uci %>%
@@ -484,6 +522,7 @@ one_hot_uci <- dummyVars(~ sex + fbs + restecg + thalach, data = uci) %>%
 
 ## Modeling and Insights
 ### Predict Heart Disease Risk
+
 Encode categorical variables
 ```{r}
 uci$sex <- as.numeric(factor(uci$sex))
@@ -550,6 +589,7 @@ roc_response <- roc(response = risk_test_set$have_heart_disease,
 plot(roc_response)
 auc(roc_response)
 ```
+
 Calculate F-1 Score: 
 ```{r}
 P <- 49 / (49 + 15) # precision
@@ -562,6 +602,7 @@ R
 ```
 
 ### Predict Heart Acttack Risk
+
 One-hot code the dataset
 ```{r}
 heart_2022$sex <- as.numeric(factor(heart_2022$Sex))
@@ -633,7 +674,8 @@ confusionMatrix(predicted_classes, test$HadHeartAttack)
 
 Get ROC curve
 ```{r}
-roc_response <- roc(response = test$HadHeartAttack, predictor = as.numeric(predictions))
+roc_response <- roc(response = test$HadHeartAttack, 
+                    predictor = as.numeric(predictions))
 plot(roc_response)
 auc(roc_response)
 ```
@@ -661,8 +703,8 @@ levels(train$HadHeartAttack)
 
 predictions <- predict(tree2, newdata = test, type = "class")
 ```
-## Let's Get the accuracy for Artificial Neural Networks
 
+#### Let's Get the accuracy for Artificial Neural Networks
 ```{r}
 formula <- HadHeartAttack ~ sex + GeneralHealth + PhysicalActivities + 
             HadAngina + HadSkinCancer + HadArthritis + HadDiabetes + 
@@ -693,18 +735,21 @@ print(paste("Accuracy of the model:", accuracy))
 
 ** We get an accuracy of ~94% with neural network model which is very high. 
 
-## Motarlity of Heart Disease based on Region
+### Motarlity of Heart Disease based on Region
+
 Since there is not any columns for us to convert it into binary columns to apply logistic regression to predict the mortality rate based on region, we will use linear regression
-### One-hot code
+
+One-hot code
 ```{r}
 # Region
 cdc <- cbind(cdc, model.matrix(~ Region - 1, data = cdc))
 
 # Stratification1 and Stratification2
-cdc <- cbind(cdc, model.matrix(~ Stratification1 + Stratification2 - 1, data = cdc))
+cdc <- cbind(cdc, model.matrix(~ Stratification1 + Stratification2 - 1, 
+                               data = cdc))
 ```
 
-### Rename the one-hot code columns: 
+Rename the one-hot code columns: 
 ```{r}
 # rename the columns
 colnames(cdc)[colnames(cdc) == 
@@ -724,9 +769,9 @@ colnames(cdc)[colnames(cdc) ==
   "Stratification2Native_Hawaiian_or_Other_Pacific_Islander"
 ```
 
-### Apply linear regression
+#### Apply linear regression
 
-#### Just South
+1. Just South
 ```{r}
 set.seed(2)
 train_indices <- createDataPartition(cdc$Data_Value_Per_100000_Population, 
@@ -747,7 +792,7 @@ mse <- mean((predictions - test$Data_Value_Per_100000_Population)^2)
 print(paste("Mean Squared Error:", mse))
 ```
 
-#### All regions
+2. All regions
 ```{r}
 set.seed(2)
 train_indices <- createDataPartition(cdc$Data_Value_Per_100000_Population, 
@@ -773,7 +818,8 @@ The Multiple R-squared value of 0.03426 suggests that only about 3.43% of the va
 
 The model shows statistical significance but lacks predictive strength (low R-squared and high MSE), implying that while there are some effects of region on mortality rates, there are likely many other factors not captured by this model that influence mortality rates much more significantly. It is difficult just based on this dataset to predict the heart disease mortality based on only region.
 
-#### All regions + Sex + Races
+3. All regions + Sex + Races
+
 Try with other factors `Stratification1` and `Stratification2` (sex, races) to see if model will better. Apply linear regression and run prediction in the new model:
 ```{r}
 # retrain the model 
