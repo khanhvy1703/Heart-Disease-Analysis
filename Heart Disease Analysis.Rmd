@@ -28,6 +28,7 @@ library(ggplot2)
 library(dplyr)
 library(caret)
 library(pROC)
+library(tree)
 options(readr.show_col_types = FALSE)
 ```
 
@@ -427,11 +428,17 @@ roc_response <- roc(response = test$HadHeartAttack, predictor = as.numeric(predi
 plot(roc_response)
 auc(roc_response)
 ```
+* As we can see the logistics regression model has the Area Under the curve of 0.9027. 
+* Which means that the model almost correctly predicts if the person has heart disease or not
 
 ```{r}
-# Run linear regression model
-model <- lm(Data_Value_Per_100000_Population ~ Region, data = cdc)
-
+# Let's check the decision Tree
+set.seed(2904)
+tree2<-tree(HadHeartAttack~.,method="class",data=train)
+tree2
+plot(tree2)
+text(tree2,pretty=0)
+tree2$frame$yprob
 ```
 
 ```{r}
