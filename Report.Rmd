@@ -38,19 +38,18 @@ Various important transformations were used in feature engineering for heart dis
 
 We performed EDA to help us better understand the data and identify the patterns, trends, and relationships between factors. We started by analyzing the relationship between age, sex, and heart disease to determine which demographic group is the most commonly affected. The graph in *Figure 1* confirms that most people having heart disease peak in old age, while those without heart disease are evenly distributed across ages. In addition, besides ages, we wanted to know how the region and the practices, environment, and habits that come with the region affect the probability of getting heart attacks. We plot bar graphs that display the total cases of heart disease per 100,000 population across different regions. 
 
-![Age Distribution of Heart Disease Prevalence](images/figure1.png){width=305px}
-
-![Heart Disease Mortality Cases in Different Regions](images/figure2.png){width=305px}
+![Figure 1: Age Distribution of Heart Disease Prevalence](images/figure1.3.png){width=306px}
+![Figure 2: Heart Disease Mortality Cases in Different Regions](images/figure2.2.png){width=306px}
 
 *Figure 3* presents the medical history distribution of patients who did and did not experience heart attacks. We can conclude that various underlying health conditions are associated with heart attacks. The largest number of patients who had heart attacks were with Diabetes, Cancer, COPD, Asthma, and Depressive Disorder, indicating these are the most common conditions contributing to the risk of having heart attacks. The visualization in Figure 4 illustrates that individuals with the highest number of good, very good, and excellent general health fall under the age category of 65 to 69, which is surprising given they are among one of the most prone to heart disease age categories. This goes to show that symptoms, and external factors like diet, habits etc play a major role in the probability of getting a heart attack.
 
-![Medical History Distribution by Heart Attack Status](images/figure3.png){width=305px}
-![Health Condition by Age Category](images/figure4.png){width=305px}
+![Figure 3: Medical History Distribution by Heart Attack Status](images/figure3.2.png){width=306px}
+![Figure 4: Health Condition by Age Category](images/figure4.2.png){width=306px}
 
 Furthermore, because Figure 4 shows that most people in group 65-74 have excellent health but *Figure 1* demonstrates that most people having heart disease peak in old age, we plotted boxplot (*Figure 5*) to observer the lifestyle and to identify whether or not lifestyle also contributes to the risk of heart attack. The plot shows that most people who experienced heart attacks did not usually exercise, but surprisingly, the majority of patients who drank alcohol did not have heart attacks. To analyze further to see which age, drinking, and smoking affect the patients experiencing heart attacks, we plotted the histogram graph shown in *Figure 6*. The graph visualizes the count of drinkers and smokers across different age categories, highlighting higher prevalence among older age groups. This gives us another solid factor as to why individuals in the older age category are more likely to get heart attacks.
 
-![LifeStyle Distribution by Heart Attack Status](images/figure5.png){width=305px}
-![Counts of Drinkers and Smokers by Different Age Category](images/figure6.png){width=305px}
+![Figure 5: LifeStyle Distribution by Heart Attack Status](images/figure5.2.png){width=305px}
+![Figure 6: Counts of Drinkers & Smokers by Different Age Category](images/figure6.2.png){width=305px}
 
 ## 2.4 Data Preparation for Model Input
 
@@ -90,13 +89,21 @@ We used Decision Tree to predict and support the logistic regression model for t
 
 We wanted to know how the neural network model performed when we trained the model with the same parameters. The neural network model was trained to predict if the person will have a heart attack in the future when given the various variables. The results and metrics of this model are discussed in the Result section *(Section 3)*.
 
+| Controls the range of weight initialization 	|  0.1 	|
+| Decay	|  0.0005 	|
+| Maximum number of training iterations  	|  1000 	|
+
+
+Table: Training Parameters of Neural Network Model
+
+
 # 3. Results
 
 Based on the analysis from our EDAs, we can conclude that demography and underlying health are the primary factors contributing to the chances of having heart disease and heart attack. In addition to age, sex, and medical history, smoking and alcohol consumption in older age and not doing exercise regularly also contribute to the probability of having heart attacks. Furthermore, our analysis shows that there is a link between the demographic and geographic factors in the mortality rates of heart disease, as *Figure 2* illustrates that the South region stands out with a significantly higher number of mortality cases. 
 
 To confirm the hypothesis we conclude from EDAs, we then created and compared 5 different models - 2 logistic regression, 1 linear regression, 1 neural network, and 1 decision tree to predict the risk of having heart disease, heart attack, and mortality rate which are based on different factors found from EDAs. 
 
-## 3.1 Logistics regression model
+## 3.1 Logistics regression
 
 As for the logistic regression models, we conducted two different models - *Model 1 and Model 2*, respectively, based on two datasets UCI and Kaggle to predict the chances of having a heart attack and heart disease (*Table 2*). Model 1 performs well in specificity and F1- score with a decent accuracy, 76.77%. F1-score - above 80% shows us that there is a good balance between precision and recall indicating Model 1 is fairly reliable to use to predict the risk of heart disease with just based on different health factors. 
 
@@ -109,9 +116,19 @@ Table: Accuracy, Sensitivity, Specificity, F1, and AUC scores of logistic regres
 
 In the linear regression model, as mentioned in *section 2.5*, we chose *Region, Sex, and Age* as predictors for the model and fit in the training data. However, we got the *MSE* values of 8384.09 which is too high, and R-square values of 0.2539, which is too low (*Table 3*). It suggests that the model lacks predictive strength, more data and variables may be needed to have a better model.
 
-## 3.2 Decision Tree Model
+## 3.1 Linear Regression
 
-![Decision Tree Model tree structure](images/figure7.png)
+| MSE	|  R-squared 	| 
+| :---:	| :---:	|
+| 8384.09 | 0.2539 |
+
+Table: Linear Regression Model Evaluation
+
+In the linear regression model, as mentioned in *section 2.5*, we chose *Region, Sex, and Age* as predictors for the model and fit in the training data. However, we got the MSE values of 8384.09 which is too high, and R-square values of 0.2539, which is too low (Table 3). It suggests that the model lacks predictive strength, more data and variables may be needed to have a better model. 
+
+## 3.3 Decision Tree Model
+
+![   ](images/figure7.2.png)
 
 The root node splits on the *HadAngina* variable. Left branch - *HadAngina < 1.5* and right branch -  *HadAngina > 1.5*. We further see that the left branch then further splits on the *HasConditions* variable, with those having *HasConditions < 1.5* being classified as "No" (no heart attack) and those with *HasConditions > 1.5* splitting again on the *HadStroke* variable. The right branch with *HadAngina > 1.5* is classified as "No" (no heart attack). The tree has 5 terminal nodes, representing the final predictions.
 
@@ -131,7 +148,7 @@ The neural network model accurately predicts if the person will suffer from a he
 |                   | Maalolan Bharaniraj | Ngoc Khanh Vy Le | Madhuri Krishnamurthy | Subhankar Shah
 | :---------------: | :------: | ----: | :------: | ----: |
 | Data Processing                     |  | \checkmark | \checkmark |  |
-| DExploratory Data Analysis          | \checkmark | \checkmark |  |  |
+| Exploratory Data Analysis          | \checkmark | \checkmark |  |  |
 | Feature Engineering                 |  |  | \checkmark |  |
 | Data Preparation + Feature Selection|  | \checkmark |  |  |
 | Linear Regression                   |  | \checkmark |  |  |
